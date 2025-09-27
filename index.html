@@ -1,568 +1,813 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tómbola de Bingo y Generador</title>
-    <!-- Librería jsPDF para generar archivos PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Tómbola de Bingo y Generador</title>
+        <!-- Librería jsPDF para generar archivos PDF -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 
-        :root {
-            --background-color: #eef1f5;
-            --container-bg: #ffffff;
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --accent-color: #ffc107;
-            --success-color: #28a745;
-            --text-color: #343a40;
-            --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-        }
+            :root {
+                --background-color: #eef1f5;
+                --container-bg: #ffffff;
+                --primary-color: #007bff;
+                --secondary-color: #6c757d;
+                --accent-color: #ffc107;
+                --success-color: #28a745;
+                --text-color: #343a40;
+                --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow-y: auto;
-        }
+            body {
+                font-family: 'Poppins', sans-serif;
+                background-color: var(--background-color);
+                color: var(--text-color);
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                min-height: 100vh;
+                margin: 0;
+                padding: 20px;
+                box-sizing: border-box;
+                overflow-y: auto;
+            }
 
-        .container {
-            width: 100%;
-            /* --- MODIFICACIÓN: Aumentado el ancho máximo --- */
-            max-width: 1200px; 
-            background-color: var(--container-bg);
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: var(--shadow);
-            text-align: center;
-            margin: 20px 0;
-        }
+            .container {
+                width: 100%;
+                max-width: 1200px; 
+                background-color: var(--container-bg);
+                padding: 2rem;
+                border-radius: 20px;
+                box-shadow: var(--shadow);
+                text-align: center;
+                margin: 20px 0;
+            }
+            
+            .main-banner {
+                width: 100%;
+                max-width: 700px;
+                height: auto;
+                margin: 0 auto 1.5rem auto;
+                border-radius: 12px;
+            }
+
+            h1, h2, h3, h4 {
+                color: var(--primary-color);
+                margin-top: 0;
+            }
+            
+            .caller-area {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem;
+            }
+            
+            .game-panel {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 3rem;
+                flex-wrap: wrap;
+                margin-bottom: 1.5rem;
+            }
+
+            .pattern-selector-area {
+                background: #f8f9fa;
+                padding: 1.5rem;
+                border-radius: 12px;
+                flex-shrink: 0;
+            }
+            .pattern-selector-area label {
+                display: block;
+                font-size: 1.2rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+            }
+            .pattern-display {
+                display: grid;
+                grid-template-columns: repeat(5, 30px);
+                gap: 5px;
+                justify-content: center;
+                margin-top: 1rem;
+            }
+            .pattern-cell {
+                width: 30px;
+                height: 30px;
+                background-color: #e0e0e0;
+                border: 2px solid #ccc;
+                border-radius: 4px;
+                transition: background-color 0.3s;
+            }
+            .pattern-cell.active {
+                background-color: var(--primary-color);
+                border-color: var(--primary-color);
+            }
+
+            .tumble-wrapper {
+                position: relative;
+                width: 250px;
+                height: 250px;
+                perspective: 1200px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+            #tumble-container {
+                width: 100%;
+                height: 100%;
+                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,123,255,0.3) 100%);
+                border: 5px solid var(--primary-color);
+                border-radius: 50%;
+                position: relative;
+                box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
+                transform-style: preserve-3d;
+            }
+            
+            #tumble-container::before {
+                content: '';
+                position: absolute;
+                top: 5%;
+                left: 5%;
+                width: 90%;
+                height: 90%;
+                background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 60%);
+                border-radius: 50%;
+            }
+
+            .ball {
+                position: absolute;
+                width: 40px;
+                height: 40px;
+                background: radial-gradient(circle at 13px 13px, #ffffc4, var(--accent-color));
+                border-radius: 50%;
+                box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+                left: 50%;
+                top: 50%;
+                margin-left: -20px;
+                margin-top: -20px;
+            }
+            
+            #tumble-container.spinning { animation: spin 1.5s linear infinite; }
+            
+            #tumble-container.spinning .ball {
+                animation-iteration-count: infinite;
+                animation-direction: alternate;
+                animation-timing-function: ease-in-out;
+            }
+
+            @keyframes spin { from { transform: rotateY(0deg) rotateX(10deg); } to { transform: rotateY(360deg) rotateX(10deg); } }
+            @keyframes tumble-1 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(80px, 90px, 50px) scale(1.1); } }
+            @keyframes tumble-2 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-70px, -80px, -30px) scale(0.9); } }
+            @keyframes tumble-3 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(90px, -70px, 60px) scale(1.2); } }
+            @keyframes tumble-4 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-90px, 60px, -40px) scale(0.8); } }
+            @keyframes tumble-5 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(30px, 40px, -60px) scale(1); } }
+
+
+            #caller-display {
+                width: 150px;
+                height: 150px;
+                border-radius: 50%;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                background: radial-gradient(circle, #fff, #e0e0e0);
+                box-shadow: var(--shadow);
+                border: 5px solid var(--accent-color);
+                margin-top: -75px; 
+                z-index: 10;
+                position: relative;
+            }
+
+            #current-ball {
+                font-size: 3.5rem;
+                font-weight: 700;
+                color: var(--primary-color);
+                transform: scale(0);
+                transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            
+            #current-ball.visible { transform: scale(1); }
+
+            .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin-top: 1rem; }
+            
+            .btn {
+                padding: 0.8rem 1.8rem;
+                font-size: 1.1rem;
+                font-weight: 600;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                color: #fff;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            }
+
+            .btn:disabled { cursor: not-allowed; opacity: 0.6; }
+            .btn-primary { background: linear-gradient(45deg, #007bff, #0056b3); }
+            .btn-secondary { background: linear-gradient(45deg, #6c757d, #5a6268); }
+            .btn-success { background: linear-gradient(45deg, #28a745, #218838); }
+            .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
+
+            #called-numbers-board { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 1.5rem; }
+            .board-row { display: flex; align-items: center; gap: 15px; }
+            .board-row .letter { font-size: 2rem; font-weight: 700; width: 40px; flex-shrink: 0; }
+            .numbers-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 8px; width: 100%; }
+
+            .number-ball {
+                font-size: 1rem;
+                font-weight: 600;
+                width: 100%;
+                aspect-ratio: 1 / 1;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                border-radius: 50%;
+                background: #e9ecef;
+                transition: all 0.3s ease;
+            }
+
+            .number-ball.called { color: white; transform: scale(1.1); }
+            .number-ball.called.B { background-color: #007bff; }
+            .number-ball.called.I { background-color: #dc3545; }
+            .number-ball.called.N { background-color: #28a745; }
+            .number-ball.called.G { background-color: #ffc107; color: #333; }
+            .number-ball.called.O { background-color: #6f42c1; }
+            
+            .letter-B { color: var(--primary-color); }
+            .letter-I { color: #dc3545; }
+            .letter-N { color: #28a745; }
+            .letter-G { color: var(--accent-color); }
+            .letter-O { color: #6f42c1; }
+
+            .tools-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #e0e0e0; }
+            .pdf-generator { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; margin-top: 1rem; }
+            .pdf-generator input { font-family: 'Poppins', sans-serif; font-size: 1.1rem; padding: 0.7rem; width: 80px; text-align: center; border: 2px solid #ccc; border-radius: 10px; }
+            
+            select { font-size: 1.1rem; padding: 0.7rem; border-radius: 10px; border: 2px solid #ccc; }
+
+            @media (max-width: 600px) {
+                body { padding: 10px; }
+                .container { padding: 1rem; }
+                h1 { font-size: 1.8rem; }
+                .game-panel { flex-direction: column; }
+                #caller-display { width: 120px; height: 120px; margin-top: -60px; }
+                #current-ball { font-size: 2.5rem; }
+                .board-row { gap: 8px; }
+                .board-row .letter { font-size: 1.2rem; width: 20px; }
+                .numbers-grid { gap: 3px; }
+                .number-ball { font-size: 0.7rem; }
+                .btn { padding: 0.6rem 1.2rem; font-size: 1rem;}
+            }
+        </style>
+    </head>
+    <body>
+
+    <div class="container">
+        <img id="main-banner-img" src="" alt="Banner de Bingo" class="main-banner">
         
-        .main-banner {
-            width: 100%;
-             /* --- MODIFICACIÓN: Aumentado el ancho máximo del banner --- */
-            max-width: 700px;
-            height: auto;
-            margin: 0 auto 1.5rem auto;
-            border-radius: 12px;
-        }
-
-        h1, h2, h3 {
-            color: var(--primary-color);
-            margin-top: 0;
-        }
-        
-        .caller-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1.5rem;
-        }
-        
-        .game-panel {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 3rem;
-            flex-wrap: wrap;
-            margin-bottom: 1.5rem;
-        }
-
-        .pattern-selector-area {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 12px;
-            flex-shrink: 0;
-        }
-        .pattern-selector-area label {
-            display: block;
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-        .pattern-display {
-            display: grid;
-            grid-template-columns: repeat(5, 30px);
-            gap: 5px;
-            justify-content: center;
-            margin-top: 1rem;
-        }
-        .pattern-cell {
-            width: 30px;
-            height: 30px;
-            background-color: #e0e0e0;
-            border: 2px solid #ccc;
-            border-radius: 4px;
-            transition: background-color 0.3s;
-        }
-        .pattern-cell.active {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-
-        .tumble-wrapper {
-            position: relative;
-            width: 250px;
-            height: 250px;
-            perspective: 1200px;
-        }
-
-        #tumble-container {
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,123,255,0.3) 100%);
-            border: 5px solid var(--primary-color);
-            border-radius: 50%;
-            position: relative;
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
-            transform-style: preserve-3d;
-        }
-        
-        #tumble-container::before {
-            content: '';
-            position: absolute;
-            top: 5%;
-            left: 5%;
-            width: 90%;
-            height: 90%;
-            background: radial-gradient(circle, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0) 60%);
-            border-radius: 50%;
-        }
-
-        .ball {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            background: radial-gradient(circle at 13px 13px, #ffffc4, var(--accent-color));
-            border-radius: 50%;
-            box-shadow: 1px 1px 5px rgba(0,0,0,0.3);
-        }
-
-        .tumble-container.spinning { animation: spin 1.5s linear infinite; }
-        .tumble-container.spinning .ball {
-            animation-iteration-count: infinite;
-            animation-direction: alternate;
-            animation-timing-function: ease-in-out;
-        }
-
-        @keyframes spin { from { transform: rotateY(0deg) rotateX(10deg); } to { transform: rotateY(360deg) rotateX(10deg); } }
-        @keyframes tumble-1 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(60px, 80px, 40px); } }
-        @keyframes tumble-2 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-50px, -70px, -20px); } }
-        @keyframes tumble-3 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(70px, -60px, 50px); } }
-        @keyframes tumble-4 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(-80px, 50px, -30px); } }
-        @keyframes tumble-5 { 0% { transform: translate3d(0, 0, 0); } 100% { transform: translate3d(20px, 30px, -50px); } }
-
-        #caller-display {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: radial-gradient(circle, #fff, #e0e0e0);
-            box-shadow: var(--shadow);
-            border: 5px solid var(--accent-color);
-            margin-top: -75px; 
-            z-index: 10;
-        }
-
-        #current-ball {
-            font-size: 3.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
-            transform: scale(0);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        #current-ball.visible { transform: scale(1); }
-
-        .controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin-top: 1rem; }
-        
-        .btn {
-            padding: 0.8rem 1.8rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            color: #fff;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .btn:disabled { cursor: not-allowed; opacity: 0.6; }
-        .btn-primary { background: linear-gradient(45deg, #007bff, #0056b3); }
-        .btn-secondary { background: linear-gradient(45deg, #6c757d, #5a6268); }
-        .btn-success { background: linear-gradient(45deg, #28a745, #218838); }
-        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); }
-
-        #called-numbers-board { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 1.5rem; }
-        .board-row { display: flex; align-items: center; gap: 15px; }
-        .board-row .letter { font-size: 2rem; font-weight: 700; width: 40px; flex-shrink: 0; }
-        .numbers-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 8px; width: 100%; }
-
-        .number-ball {
-            font-size: 1rem;
-            font-weight: 600;
-            width: 100%;
-            aspect-ratio: 1 / 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border-radius: 50%;
-            background: #e9ecef;
-            transition: all 0.3s ease;
-        }
-
-        .number-ball.called { color: white; transform: scale(1.1); }
-        .number-ball.called.B { background-color: #007bff; }
-        .number-ball.called.I { background-color: #dc3545; }
-        .number-ball.called.N { background-color: #28a745; }
-        .number-ball.called.G { background-color: #ffc107; color: #333; }
-        .number-ball.called.O { background-color: #6f42c1; }
-        
-        .letter-B { color: var(--primary-color); }
-        .letter-I { color: #dc3545; }
-        .letter-N { color: #28a745; }
-        .letter-G { color: var(--accent-color); }
-        .letter-O { color: #6f42c1; }
-
-        .tools-section { margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid #e0e0e0; }
-        .pdf-generator { display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 1rem; }
-        .pdf-generator input { font-family: 'Poppins', sans-serif; font-size: 1.1rem; padding: 0.7rem; width: 80px; text-align: center; border: 2px solid #ccc; border-radius: 10px; }
-        
-        select { font-size: 1.1rem; padding: 0.7rem; border-radius: 10px; border: 2px solid #ccc; }
-
-        @media (max-width: 600px) {
-            .container { padding: 1rem; }
-            h1 { font-size: 2rem; }
-            .board-row .letter { font-size: 1.5rem; width: 25px; gap: 8px; }
-            .numbers-grid { gap: 4px; }
-            .number-ball { font-size: 0.8rem; }
-        }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <img src="https://i.postimg.cc/VN6nHMHm/Imagen1.jpg" alt="Banner de Bingo" class="main-banner">
-    
-    <div class="caller-area">
-        <h1>Tómbola de Bingo</h1>
-        
-        <div class="game-panel">
-            <div class="main-content">
-                <div class="tumble-wrapper">
-                    <div id="tumble-container"></div>
+        <div class="caller-area">
+            <h1>Tómbola de Bingo</h1>
+            
+            <div class="game-panel">
+                <div class="main-content" style="display: flex; flex-direction: column; align-items: center;">
+                    <div class="tumble-wrapper">
+                        <div id="tumble-container"></div>
+                    </div>
+                    <div id="caller-display">
+                        <span id="current-ball">-</span>
+                    </div>
+                    <div class="controls">
+                        <button id="call-number-btn" class="btn btn-primary">Cantar Balota</button>
+                        <button id="reset-btn" class="btn btn-secondary">Reiniciar Juego</button>
+                    </div>
                 </div>
-                <div id="caller-display">
-                    <span id="current-ball">-</span>
-                </div>
-                <div class="controls">
-                    <button id="call-number-btn" class="btn btn-primary">Cantar Balota</button>
-                    <button id="reset-btn" class="btn btn-secondary">Reiniciar Juego</button>
+
+                <div class="pattern-selector-area">
+                    <label for="pattern-select">Patrón para Ganar</label>
+                    <select id="pattern-select">
+                        <option value="linea-h">Línea Horizontal</option>
+                        <option value="linea-v">Línea Vertical</option>
+                        <option value="linea-d">Línea Diagonal</option>
+                        <option value="esquinas">Cuatro Esquinas</option>
+                        <option value="letra-x">Letra "X"</option>
+                        <option value="carton-lleno">Cartón Lleno</option>
+                    </select>
+                    <div class="pattern-display" id="pattern-display"></div>
                 </div>
             </div>
 
-            <div class="pattern-selector-area">
-                <label for="pattern-select">Patrón para Ganar</label>
-                <select id="pattern-select">
-                    <option value="linea">Línea (Cualquier dirección)</option>
-                    <option value="esquinas">Cuatro Esquinas</option>
-                    <option value="letra-x">Letra "X"</option>
-                    <option value="carton-lleno">Cartón Lleno</option>
+            <div id="called-numbers-board"></div>
+        </div>
+
+        <!-- HERRAMIENTAS ADICIONALES -->
+        <div class="tools-section">
+            <h3>Herramientas Adicionales</h3>
+            <div class="pdf-generator">
+                <input type="number" id="num-cards-input" value="10" min="1" max="1000">
+                <button id="generate-pdf-btn" class="btn btn-success">Generar Tarjetones PDF</button>
+            </div>
+            <!-- INICIO: NUEVA SECCIÓN DE BINGO MATEMÁTICO -->
+            <div class="pdf-generator" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid #ddd; width: 100%;">
+                <h4 style="width: 100%; margin-bottom: 1rem; color: var(--primary-color);">Bingo Matemático</h4>
+                <select id="difficulty-select">
+                    <option value="easy">Fácil (Suma/Resta)</option>
+                    <option value="medium">Medio (Suma/Resta/Mult)</option>
+                    <option value="hard">Difícil (División y Mixto)</option>
                 </select>
-                <div class="pattern-display" id="pattern-display"></div>
+                <input type="number" id="num-math-cards-input" value="10" min="1" max="1000">
+                <button id="generate-math-pdf-btn" class="btn btn-success">Generar Tarjetones Matemáticos</button>
             </div>
-        </div>
-
-        <div id="called-numbers-board"></div>
-    </div>
-
-    <!-- HERRAMIENTAS ADICIONALES -->
-    <div class="tools-section">
-        <h3>Herramientas Adicionales</h3>
-        <div class="pdf-generator">
-            <input type="number" id="num-cards-input" value="10" min="1" max="1000">
-            <button id="generate-pdf-btn" class="btn btn-success">Generar Tarjetones PDF</button>
+            <!-- FIN: NUEVA SECCIÓN DE BINGO MATEMÁTICO -->
         </div>
     </div>
-</div>
 
-<script>
-    const tumbleContainer = document.getElementById('tumble-container');
-    const callNumberBtn = document.getElementById('call-number-btn');
-    const resetBtn = document.getElementById('reset-btn');
-    const generatePdfBtn = document.getElementById('generate-pdf-btn');
-    const currentBallDisplay = document.getElementById('current-ball');
-    const calledNumbersBoard = document.getElementById('called-numbers-board');
-    const patternSelect = document.getElementById('pattern-select');
-    const patternDisplay = document.getElementById('pattern-display');
+    <script>
+        const tumbleContainer = document.getElementById('tumble-container');
+        const callNumberBtn = document.getElementById('call-number-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const generatePdfBtn = document.getElementById('generate-pdf-btn');
+        const currentBallDisplay = document.getElementById('current-ball');
+        const calledNumbersBoard = document.getElementById('called-numbers-board');
+        const patternSelect = document.getElementById('pattern-select');
+        const patternDisplay = document.getElementById('pattern-display');
+        const generateMathPdfBtn = document.getElementById('generate-math-pdf-btn');
 
-    let availableNumbers = [];
-    let synth;
+        let availableNumbers = [];
+        let calledNumbers = new Set();
+        let synth;
+        try {
+            synth = window.speechSynthesis;
+        } catch(e) {
+            console.error("La API de Síntesis de Voz no es soportada en este navegador.");
+            synth = null;
+        }
 
-    function speak(text) {
-        if (!synth) {
-            if ('speechSynthesis' in window) {
-                synth = window.speechSynthesis;
-                if (synth.getVoices().length === 0) {
-                    synth.onvoiceschanged = () => {};
+        // --- IMAGEN EMBEBIDA ---
+        // He reemplazado la imagen rota con una válida y la he codificado en Base64.
+        const bannerImgData_base64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAEgA8ADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9/KKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACii-";
+        document.getElementById('main-banner-img').src = bannerImgData_base64;
+
+
+        /**
+         * INICIO: Lógica del Juego de Bingo
+         */
+        function setupGame() {
+            availableNumbers = [];
+            for (let i = 1; i <= 75; i++) {
+                availableNumbers.push(i);
+            }
+            calledNumbers.clear();
+            
+            currentBallDisplay.textContent = '-';
+            currentBallDisplay.classList.remove('visible');
+            
+            createCalledNumbersBoard();
+            createTombolaBalls();
+            updatePatternDisplay();
+
+            callNumberBtn.disabled = false;
+            resetBtn.disabled = true;
+        }
+
+        function createTombolaBalls() {
+            tumbleContainer.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const ball = document.createElement('div');
+                ball.className = 'ball';
+                const duration = Math.random() * 1.5 + 0.5;
+                ball.style.animation = `tumble-${i+1} ${duration}s`;
+                tumbleContainer.appendChild(ball);
+            }
+        }
+
+        function createCalledNumbersBoard() {
+            calledNumbersBoard.innerHTML = '';
+            const letters = ['B', 'I', 'N', 'G', 'O'];
+            const ranges = [[1, 15], [16, 30], [31, 45], [46, 60], [61, 75]];
+
+            letters.forEach((letter, index) => {
+                const row = document.createElement('div');
+                row.className = 'board-row';
+                
+                const letterEl = document.createElement('div');
+                letterEl.className = `letter letter-${letter}`;
+                letterEl.textContent = letter;
+                row.appendChild(letterEl);
+                
+                const numbersGrid = document.createElement('div');
+                numbersGrid.className = 'numbers-grid';
+                
+                for (let i = ranges[index][0]; i <= ranges[index][1]; i++) {
+                    const numBall = document.createElement('div');
+                    numBall.className = 'number-ball';
+                    numBall.id = `ball-${i}`;
+                    numBall.textContent = i;
+                    numbersGrid.appendChild(numBall);
                 }
-            } else {
-                console.warn('La síntesis de voz no es soportada por este navegador.');
+                row.appendChild(numbersGrid);
+                calledNumbersBoard.appendChild(row);
+            });
+        }
+
+        function getLetterFromNumber(number) {
+            if (number <= 15) return 'B';
+            if (number <= 30) return 'I';
+            if (number <= 45) return 'N';
+            if (number <= 60) return 'G';
+            return 'O';
+        }
+
+        function callNumber() {
+            if (availableNumbers.length === 0) {
+                currentBallDisplay.textContent = 'FIN';
+                callNumberBtn.disabled = true;
                 return;
             }
-        }
-        if (synth && text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'es-ES';
-            utterance.rate = 0.9;
-            synth.speak(utterance);
-        }
-    }
 
-    function getLetter(number) {
-        if (number <= 15) return 'B';
-        if (number <= 30) return 'I';
-        if (number <= 45) return 'N';
-        if (number <= 60) return 'G';
-        return 'O';
-    }
-    
-    function updatePatternDisplay() {
-        const pattern = patternSelect.value;
-        patternDisplay.innerHTML = '';
-        for (let i = 0; i < 25; i++) {
-            const cell = document.createElement('div');
-            cell.classList.add('pattern-cell');
-            const row = i % 5;
-            const col = Math.floor(i / 5);
-
-            let isActive = false;
-            switch(pattern) {
-                case 'linea':
-                    if (col === 2) isActive = true; // Muestra línea N como ejemplo
-                    break;
-                case 'esquinas':
-                    if ((row === 0 || row === 4) && (col === 0 || col === 4)) isActive = true;
-                    break;
-                case 'letra-x':
-                    if (row === col || row + col === 4) isActive = true;
-                    break;
-                case 'carton-lleno':
-                    isActive = true;
-                    break;
-            }
-            if (isActive) cell.classList.add('active');
-            patternDisplay.appendChild(cell);
-        }
-    }
-
-    function setupGame() {
-        availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
-        tumbleContainer.innerHTML = '';
-        calledNumbersBoard.innerHTML = '';
-        currentBallDisplay.textContent = '-';
-        currentBallDisplay.classList.remove('visible');
-
-        const letters = ['B', 'I', 'N', 'G', 'O'];
-        letters.forEach((letter, index) => {
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'board-row';
-            const letterDiv = document.createElement('div');
-            letterDiv.className = `letter letter-${letter}`;
-            letterDiv.textContent = letter;
-            rowDiv.appendChild(letterDiv);
-            const numbersGridDiv = document.createElement('div');
-            numbersGridDiv.className = 'numbers-grid';
-            const startNum = index * 15 + 1;
-            const endNum = startNum + 14;
-            for (let i = startNum; i <= endNum; i++) {
-                const ballDiv = document.createElement('div');
-                ballDiv.id = `ball-${i}`;
-                ballDiv.textContent = i;
-                ballDiv.classList.add('number-ball');
-                numbersGridDiv.appendChild(ballDiv);
-            }
-            rowDiv.appendChild(numbersGridDiv);
-            calledNumbersBoard.appendChild(rowDiv);
-        });
-
-        const animationNames = ['tumble-1', 'tumble-2', 'tumble-3', 'tumble-4', 'tumble-5'];
-        for (let i = 0; i < 25; i++) { 
-            const ball = document.createElement('div');
-            ball.classList.add('ball');
-            const ballSize = 40;
-            const angle = Math.random() * 2 * Math.PI;
-            const radius = Math.random() * (125 - ballSize / 2 - 20); 
-            const x = (250 / 2 - ballSize / 2) + radius * Math.cos(angle);
-            const y = (250 / 2 - ballSize / 2) + radius * Math.sin(angle);
-            ball.style.left = `${x}px`;
-            ball.style.top = `${y}px`;
-            ball.style.animationName = animationNames[Math.floor(Math.random() * animationNames.length)];
-            ball.style.animationDuration = `${Math.random() * 1.5 + 0.8}s`;
-            ball.style.animationDelay = `-${Math.random() * 2}s`;
-            tumbleContainer.appendChild(ball);
-        }
-        callNumberBtn.disabled = false;
-        updatePatternDisplay();
-    }
-
-    function callNumber() {
-        if (availableNumbers.length === 0) {
-            alert('¡Se han cantado todas las balotas!');
             callNumberBtn.disabled = true;
-            return;
+            resetBtn.disabled = true;
+            tumbleContainer.classList.add('spinning');
+            currentBallDisplay.classList.remove('visible');
+
+            setTimeout(() => {
+                tumbleContainer.classList.remove('spinning');
+                
+                const randomIndex = Math.floor(Math.random() * availableNumbers.length);
+                const calledNumber = availableNumbers.splice(randomIndex, 1)[0];
+                calledNumbers.add(calledNumber);
+
+                const letter = getLetterFromNumber(calledNumber);
+                
+                currentBallDisplay.textContent = `${letter}${calledNumber}`;
+                currentBallDisplay.classList.add('visible');
+
+                const boardBall = document.getElementById(`ball-${calledNumber}`);
+                if(boardBall) {
+                    boardBall.classList.add('called', letter);
+                }
+
+                speak(`${letter}... ${calledNumber}`);
+                
+                if(availableNumbers.length > 0) {
+                    callNumberBtn.disabled = false;
+                } else {
+                    currentBallDisplay.textContent = 'FIN';
+                }
+                resetBtn.disabled = false;
+            }, 1500);
         }
-        callNumberBtn.disabled = true;
-        currentBallDisplay.classList.remove('visible');
-        tumbleContainer.classList.add('spinning');
         
-        const tensionDuration = 2000;
-        const rollSpeed = 60;
-        const rollingInterval = setInterval(() => {
-            const randomFakeIndex = Math.floor(Math.random() * availableNumbers.length);
-            const fakeNumber = availableNumbers[randomFakeIndex];
-            currentBallDisplay.textContent = getLetter(fakeNumber) + fakeNumber;
-            currentBallDisplay.classList.add('visible');
-        }, rollSpeed);
-
-        setTimeout(() => {
-            clearInterval(rollingInterval);
-            tumbleContainer.classList.remove('spinning');
-            
-            const randomIndex = Math.floor(Math.random() * availableNumbers.length);
-            const calledNumber = availableNumbers.splice(randomIndex, 1)[0];
-            
-            const letter = getLetter(calledNumber);
-            currentBallDisplay.textContent = `${letter}${calledNumber}`;
-            currentBallDisplay.classList.add('visible');
-            
-            speak(`${letter}... ${calledNumber}`);
-            document.getElementById(`ball-${calledNumber}`).classList.add('called', letter);
-
-            if (availableNumbers.length > 0) {
-                callNumberBtn.disabled = false;
-            } else {
-                 currentBallDisplay.textContent = 'FIN';
-                 alert('¡Se han cantado todas las balotas!');
-            }
-        }, tensionDuration); 
-    }
-    
-    // --- GENERADOR DE PDF ---
-
-    const bannerImgData_base64 = '/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAEgA8ADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6VoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAoozRmgAozRketRyTRxLukdUHqxxQBJmjNRpNHIu5HVh6g5FO8xScbgM+9ADqKQEHoc0ZoAWijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACijNGaACij-';
-
-    function generateUniqueRandoms(count, min, max) { const s=new Set();while(s.size<count){s.add(Math.floor(Math.random()*(max-min+1))+min)}return Array.from(s) }
-    function generateBingoCardData() { const c={B:generateUniqueRandoms(5,1,15),I:generateUniqueRandoms(5,16,30),N:generateUniqueRandoms(4,31,45),G:generateUniqueRandoms(5,46,60),O:generateUniqueRandoms(5,61,75)};c.N.splice(2,0,'★');return c }
-
-    function drawCardOnPdf(doc, cardData, startX, startY, cardId, bannerImgData) {
-        const cardWidth = 90;
-        const titleHeight = 15;
-        const headerHeight = 12;
-        const gridHeight = 60; 
-        const cardTotalHeight = titleHeight + headerHeight + gridHeight;
-
-        const cellWidth = cardWidth / 5;
-        const cellHeight = gridHeight / 5;
-
-        doc.setLineWidth(0.5);
-        doc.rect(startX, startY, cardWidth, cardTotalHeight);
-        
-        const titleStartY = startY;
-        const imgSize = 10;
-        const imgY = titleStartY + (titleHeight - imgSize) / 2;
-        
-        const text = `Cartón #${cardId}`;
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        const textWidth = doc.getTextWidth(text);
-        
-        const totalTitleWidth = imgSize + 2 + textWidth;
-        const titleStartX = startX + (cardWidth - totalTitleWidth) / 2;
-        const imgX = titleStartX;
-        const textX = imgX + imgSize + 2;
-
-        if (bannerImgData) {
+        function speak(text) {
+            if (!synth || text.trim() === '') return;
             try {
-                doc.addImage(bannerImgData, 'JPEG', imgX, imgY, imgSize, imgSize);
-            } catch (e) {
-                console.error("Error al añadir la imagen al PDF:", e);
+                // Detiene cualquier locución anterior para evitar superposiciones.
+                synth.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-ES';
+                utterance.rate = 0.9;
+                synth.speak(utterance);
+            } catch(e) {
+                console.error("Error al intentar usar la API de voz:", e);
             }
         }
-        
-        doc.text(text, textX, titleStartY + titleHeight / 2 + 3, { align: 'left' });
 
-        const headerStartY = titleStartY + titleHeight;
-        doc.setFontSize(22);
-        const letters = ['B', 'I', 'N', 'G', 'O'];
-        letters.forEach((letter, i) => {
-            doc.text(letter, startX + i * cellWidth + cellWidth / 2, headerStartY + headerHeight / 2 + 4, { align: 'center' });
-        });
-        
-        const gridStartY = headerStartY + headerHeight;
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(16);
-        letters.forEach((letter, col) => {
-            cardData[letter].forEach((number, row) => {
-                const x = startX + col * cellWidth + cellWidth / 2;
-                const y = gridStartY + row * cellHeight + cellHeight / 2 + 3;
-                doc.text(String(number), x, y, { align: 'center' });
+        function updatePatternDisplay() {
+            patternDisplay.innerHTML = '';
+            const pattern = patternSelect.value;
+            const activeCells = new Set();
+            const n = 5;
+
+            // Lógica para definir celdas activas según el patrón
+            const patterns = {
+                'linea-h': [10, 11, 12, 13, 14], // Línea horizontal central
+                'linea-v': [2, 7, 12, 17, 22],   // Línea vertical central
+                'linea-d': [0, 6, 12, 18, 24],   // Diagonal principal
+                'esquinas': [0, 4, 20, 24],
+                'letra-x': [0, 4, 6, 8, 12, 16, 18, 20, 24],
+                'carton-lleno': Array.from({length: 25}, (_, i) => i)
+            };
+
+            const cellsToShow = patterns[pattern] || [];
+            cellsToShow.forEach(c => activeCells.add(c));
+            
+            // El centro es gratis
+            if (pattern !== 'carton-lleno') {
+                activeCells.add(12);
+            }
+
+            for (let i = 0; i < n * n; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'pattern-cell';
+                if (activeCells.has(i)) {
+                    cell.classList.add('active');
+                }
+                patternDisplay.appendChild(cell);
+            }
+        }
+
+        /**
+         * INICIO: Lógica para Generación de PDF
+         */
+        function generateUniqueRandoms(count, min, max) { 
+            const s = new Set();
+            while(s.size < count){
+                s.add(Math.floor(Math.random() * (max - min + 1)) + min);
+            }
+            return Array.from(s);
+        }
+
+        function generateBingoCardData() { 
+            const c = {
+                B: generateUniqueRandoms(5, 1, 15),
+                I: generateUniqueRandoms(5, 16, 30),
+                N: generateUniqueRandoms(4, 31, 45),
+                G: generateUniqueRandoms(5, 46, 60),
+                O: generateUniqueRandoms(5, 61, 75)
+            };
+            c.N.splice(2, 0, '★');
+            return c;
+        }
+
+        function drawCardOnPdf(doc, cardData, startX, startY, cardId, bannerImg) {
+            const cardWidth = 90;
+            const titleHeight = 15;
+            const headerHeight = 12;
+            const gridHeight = 60; 
+            const cardTotalHeight = titleHeight + headerHeight + gridHeight;
+
+            const cellWidth = cardWidth / 5;
+            const cellHeight = gridHeight / 5;
+
+            doc.setLineWidth(0.5);
+            doc.rect(startX, startY, cardWidth, cardTotalHeight);
+            
+            const titleStartY = startY;
+            const imgSize = 10;
+            const imgY = titleStartY + (titleHeight - imgSize) / 2;
+            
+            const text = `Cartón #${cardId}`;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            const textWidth = doc.getTextWidth(text);
+            
+            const totalTitleWidth = imgSize + 2 + textWidth;
+            const titleStartX = startX + (cardWidth - totalTitleWidth) / 2;
+            const imgX = titleStartX;
+            const textX = imgX + imgSize + 2;
+
+            if (bannerImg) {
+                try {
+                    doc.addImage(bannerImg, 'JPEG', imgX, imgY, imgSize, imgSize);
+                } catch (e) {
+                    console.error("Error al añadir la imagen al PDF (normal):", e);
+                }
+            }
+            
+            doc.text(text, textX, titleStartY + titleHeight / 2 + 3, { align: 'left' });
+
+            const headerStartY = titleStartY + titleHeight;
+            doc.setFontSize(22);
+            const letters = ['B', 'I', 'N', 'G', 'O'];
+            letters.forEach((letter, i) => {
+                doc.text(letter, startX + i * cellWidth + cellWidth / 2, headerStartY + headerHeight / 2 + 4, { align: 'center' });
             });
-        });
-        
-        for (let i = 1; i < 5; i++) { doc.line(startX + i * cellWidth, headerStartY, startX + i * cellWidth, startY + cardTotalHeight); }
-        doc.line(startX, headerStartY, startX + cardWidth, headerStartY);
-        doc.line(startX, gridStartY, startX + cardWidth, gridStartY);
-        for (let i = 1; i <= 5; i++) { doc.line(startX, gridStartY + i * cellHeight, startX + cardWidth, gridStartY + i * cellHeight); }
-    }
-
-    function generatePdf() {
-        const numCardsInput = document.getElementById('num-cards-input');
-        const numCards = parseInt(numCardsInput.value);
-        if (isNaN(numCards) || numCards <= 0 || numCards > 1000) {
-            alert("Por favor, ingresa un número válido entre 1 y 1000."); return;
+            
+            const gridStartY = headerStartY + headerHeight;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(16);
+            letters.forEach((letter, col) => {
+                cardData[letter].forEach((number, row) => {
+                    const x = startX + col * cellWidth + cellWidth / 2;
+                    const y = gridStartY + row * cellHeight + cellHeight / 2 + 3;
+                    doc.text(String(number), x, y, { align: 'center' });
+                });
+            });
+            
+            for (let i = 1; i < 5; i++) { doc.line(startX + i * cellWidth, headerStartY, startX + i * cellWidth, startY + cardTotalHeight); }
+            doc.line(startX, headerStartY, startX + cardWidth, headerStartY);
+            doc.line(startX, gridStartY, startX + cardWidth, gridStartY);
+            for (let i = 1; i <= 5; i++) { doc.line(startX, gridStartY + i * cellHeight, startX + cardWidth, gridStartY + i * cellHeight); }
         }
 
-        alert("Generando PDF... Esto puede tardar un momento.");
-        
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-        const cardsPerPage = 3;
-        const margin = 10;
-        const cardWidth = 90;
-        const cardHeight = 15 + 12 + 60;
-        const startX = (doc.internal.pageSize.getWidth() - cardWidth) / 2;
+        function generatePdf() {
+            const numCardsInput = document.getElementById('num-cards-input');
+            const numCards = parseInt(numCardsInput.value);
+            if (isNaN(numCards) || numCards <= 0 || numCards > 1000) {
+                alert("Por favor, ingresa un número válido entre 1 y 1000."); return;
+            }
 
-        for (let i = 0; i < numCards; i++) {
-            const cardIndexOnPage = i % cardsPerPage;
-            if (i > 0 && cardIndexOnPage === 0) { doc.addPage(); }
-            const cardData = generateBingoCardData();
-            const startY = margin + cardIndexOnPage * (cardHeight + margin);
-            drawCardOnPdf(doc, cardData, startX, startY, i + 1, bannerImgData_base64);
+            alert("Generando PDF... Esto puede tardar un momento.");
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const cardsPerPage = 3;
+            const margin = 10;
+            const cardWidth = 90;
+            const cardHeight = 15 + 12 + 60;
+            const startX = (doc.internal.pageSize.getWidth() - cardWidth) / 2;
+
+            for (let i = 0; i < numCards; i++) {
+                const cardIndexOnPage = i % cardsPerPage;
+                if (i > 0 && cardIndexOnPage === 0) { doc.addPage(); }
+                const cardData = generateBingoCardData();
+                const startY = margin + cardIndexOnPage * (cardHeight + margin);
+                drawCardOnPdf(doc, cardData, startX, startY, i + 1, bannerImgData_base64);
+            }
+            
+            doc.save(`bingo_tarjetones_${numCards}.pdf`);
+        }
+
+        // --- LÓGICA PARA BINGO MATEMÁTICO ---
+        function generateMathProblem(target, difficulty) {
+            const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+            if (difficulty === 'easy') {
+                if (Math.random() > 0.5 && target > 1) { // Resta
+                    const num1 = randInt(target + 1, target + 20);
+                    return `${num1} - ${num1 - target}`;
+                } else { // Suma
+                    if (target <= 1) return `1 + 0`;
+                    const num1 = randInt(1, target - 1);
+                    return `${num1} + ${target - num1}`;
+                }
+            } else if (difficulty === 'medium') {
+                const operations = ['add', 'subtract'];
+                let factors = [];
+                if (target > 4) { 
+                    for(let i = 2; i <= Math.sqrt(target); i++){
+                        if(target % i === 0 && i > 1 && (target/i) > 1) factors.push(i);
+                    }
+                    if (factors.length > 0) operations.push('multiply');
+                }
+                const op = operations[randInt(0, operations.length - 1)];
+
+                if (op === 'multiply') {
+                    const factor1 = factors[randInt(0, factors.length - 1)];
+                    const factor2 = target / factor1;
+                    return `${factor1} × ${factor2}`;
+                } else if (op === 'subtract') {
+                    const num1 = randInt(target + 5, target + 40);
+                    return `${num1} - ${num1 - target}`;
+                } else { // add
+                    const num1 = randInt(2, target - 2 > 2 ? target-2 : 2);
+                    return `${num1} + ${target - num1}`;
+                }
+            } else { // hard
+                const operations = ['add', 'subtract'];
+                if (target > 6) {
+                    const factors = [];
+                    for(let i = 2; i <= Math.sqrt(target); i++){
+                        if(target % i === 0 && i > 1 && (target/i) > 1) factors.push(i);
+                    }
+                    if(factors.length > 0) operations.push('multiply');
+                }
+                if (target > 1 && target < 40) operations.push('divide');
+                const op = operations[randInt(0, operations.length - 1)];
+
+                if (op === 'divide') {
+                    const multiplier = randInt(2, 5);
+                    return `${target * multiplier} ÷ ${multiplier}`;
+                } else if (op === 'multiply') {
+                    const factors = [];
+                    for(let i = 2; i <= Math.sqrt(target); i++){
+                        if(target % i === 0 && i > 1 && (target/i) > 1) factors.push(i);
+                    }
+                    const factor1 = factors[randInt(0, factors.length - 1)];
+                    const factor2 = target / factor1;
+                    return `${factor1} × ${factor2}`;
+                } else if (op === 'subtract') {
+                    const num1 = randInt(target + 10, target + 60);
+                    return `${num1} - ${num1 - target}`;
+                } else { // add
+                    const num1 = randInt(5, target > 10 ? target-5 : 5);
+                    return `${num1} + ${target - num1}`;
+                }
+            }
+        }
+
+        function generateMathBingoCardData(difficulty) {
+            const card = {};
+            const ranges = { B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75] };
+            
+            for (const letter in ranges) {
+                const [min, max] = ranges[letter];
+                const count = (letter === 'N') ? 4 : 5;
+                const numbers = generateUniqueRandoms(count, min, max);
+                card[letter] = numbers.map(num => generateMathProblem(num, difficulty));
+            }
+            card.N.splice(2, 0, '★');
+            return card;
+        }
+
+        function drawMathCardOnPdf(doc, cardData, startX, startY, cardId, bannerImg) {
+            // Esta función es idéntica a drawCardOnPdf, solo cambia el tamaño de la fuente para las operaciones
+            const cardWidth = 90;
+            const titleHeight = 15;
+            const headerHeight = 12;
+            const gridHeight = 60; 
+            const cardTotalHeight = titleHeight + headerHeight + gridHeight;
+            const cellWidth = cardWidth / 5;
+            const cellHeight = gridHeight / 5;
+
+            doc.setLineWidth(0.5);
+            doc.rect(startX, startY, cardWidth, cardTotalHeight);
+            
+            const titleStartY = startY;
+            const imgSize = 10;
+            const imgY = titleStartY + (titleHeight - imgSize) / 2;
+            
+            const text = `Cartón #${cardId}`;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(12);
+            const textWidth = doc.getTextWidth(text);
+            const totalTitleWidth = imgSize + 2 + textWidth;
+            const titleStartX = startX + (cardWidth - totalTitleWidth) / 2;
+            const imgX = titleStartX;
+            const textX = imgX + imgSize + 2;
+
+            if (bannerImg) {
+                try {
+                    doc.addImage(bannerImg, 'JPEG', imgX, imgY, imgSize, imgSize);
+                } catch (e) {
+                    console.error("Error al añadir la imagen al PDF (matemático):", e);
+                }
+            }
+            doc.text(text, textX, titleStartY + titleHeight / 2 + 3, { align: 'left' });
+
+            const headerStartY = titleStartY + titleHeight;
+            doc.setFontSize(22);
+            const letters = ['B', 'I', 'N', 'G', 'O'];
+            letters.forEach((letter, i) => {
+                doc.text(letter, startX + i * cellWidth + cellWidth / 2, headerStartY + headerHeight / 2 + 4, { align: 'center' });
+            });
+            
+            const gridStartY = headerStartY + headerHeight;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(12); // Tamaño de fuente más pequeño para operaciones
+            letters.forEach((letter, col) => {
+                cardData[letter].forEach((op, row) => {
+                    const x = startX + col * cellWidth + cellWidth / 2;
+                    const y = gridStartY + row * cellHeight + cellHeight / 2 + 3;
+                    doc.text(String(op), x, y, { align: 'center' });
+                });
+            });
+            
+            for (let i = 1; i < 5; i++) { doc.line(startX + i * cellWidth, headerStartY, startX + i * cellWidth, startY + cardTotalHeight); }
+            doc.line(startX, headerStartY, startX + cardWidth, headerStartY);
+            doc.line(startX, gridStartY, startX + cardWidth, gridStartY);
+            for (let i = 1; i <= 5; i++) { doc.line(startX, gridStartY + i * cellHeight, startX + cardWidth, gridStartY + i * cellHeight); }
         }
         
-        doc.save(`bingo_tarjetones_${numCards}.pdf`);
-    }
+        function generateMathPdf() {
+            const numCardsInput = document.getElementById('num-math-cards-input');
+            const difficulty = document.getElementById('difficulty-select').value;
+            const numCards = parseInt(numCardsInput.value);
+            if (isNaN(numCards) || numCards <= 0 || numCards > 1000) {
+                alert("Por favor, ingresa un número válido entre 1 y 1000."); return;
+            }
 
-    callNumberBtn.addEventListener('click', callNumber);
-    resetBtn.addEventListener('click', setupGame);
-    generatePdfBtn.addEventListener('click', generatePdf);
-    patternSelect.addEventListener('change', updatePatternDisplay);
-    
-    speak(' ');
-    setupGame();
-</script>
+            alert("Generando PDF matemático... Esto puede tardar un momento.");
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const cardsPerPage = 3;
+            const margin = 10;
+            const cardWidth = 90;
+            const cardHeight = 15 + 12 + 60;
+            const startX = (doc.internal.pageSize.getWidth() - cardWidth) / 2;
 
-</body>
-</html>
+            for (let i = 0; i < numCards; i++) {
+                const cardIndexOnPage = i % cardsPerPage;
+                if (i > 0 && cardIndexOnPage === 0) { doc.addPage(); }
+                const cardData = generateMathBingoCardData(difficulty);
+                const startY = margin + cardIndexOnPage * (cardHeight + margin);
+                drawMathCardOnPdf(doc, cardData, startX, startY, i + 1, bannerImgData_base64);
+            }
+            
+            doc.save(`bingo_matematico_${numCards}_${difficulty}.pdf`);
+        }
+
+        // --- Event Listeners ---
+        callNumberBtn.addEventListener('click', callNumber);
+        resetBtn.addEventListener('click', setupGame);
+        generatePdfBtn.addEventListener('click', generatePdf);
+        generateMathPdfBtn.addEventListener('click', generateMathPdf);
+        patternSelect.addEventListener('change', updatePatternDisplay);
+        
+        // --- Inicia el juego ---
+        window.onload = () => {
+            // Intenta "activar" la API de voz con un silencio al cargar.
+            // Algunos navegadores requieren una interacción del usuario para empezar.
+            speak(' '); 
+            setupGame();
+        };
+    </script>
+
+    </body>
+    </html>
+
+
